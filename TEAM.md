@@ -1,19 +1,19 @@
 # Team Information
 
-**Course:** _[fill your course code and name]_
+**Course:** COMP90054 AI Planning for Autonomy
 
-**Semester:** Semester 2, 2020
+**Semester:** Semester 1, 2024
 
-**Instructor:** _[name of your instructor]_
+**Instructor:** Dr. Nir Lipovetzky, Dr. Joseph West, & Dr. Sarita Rosenstock
 
-**Team name:** _[replace this with team name in plan text]_
+**Team name:** X (Canvas Teams 90)
 
 **Team members:**
 
-* Student 1's Student number - Full Name - Student email - Student Github id
-* Student 2's Student number - Full Name - Student email - Student Github id
-* Student 3's Student number - Full Name - Student email - Student Github id
+* 1160040 - Zijun Zhang - zijuzhang1@student.unimelb.edu.au - dredre815
+* 1208784 - Di Wu - dww3@student.unimelb.edu.au - WD1120
+* 1224627 - Xiaoyu Pang - xiapang@student.unimelb.edu.au - Pang1229
 
 Replace the lines above with the correct details of members. Delete or add lines as needed.
 
-Student numbers should just be the **numbers**.
+Student numbers should just be the **3**.
