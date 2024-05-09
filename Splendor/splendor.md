@@ -3,19 +3,23 @@
 
 ### Table of contents
 
-  * [Introduction](#introduction)
-     * [Key files to read:](#key-files-to-read)
-     * [Other supporting files (do not modify):](#other-supporting-files-do-not-modify)
-  * [Rules of SPLENDOR](#rules-of-splendor)
-     * [Layout:](#layout)
-     * [Scoring:](#scoring)
-     * [Observations:](#observations)
-     * [Winning:](#winning)
-     * [Computation Time:](#computation-time)
-  * [Getting Started](#getting-started)
-     * [Restrictions:](#restrictions)
-     * [Warning:](#warning)
-     * [Ranking](#ranking)
+- [SPLENDOR : A Competitive Game Environment for COMP90054, Semester 1, 2024](#splendor--a-competitive-game-environment-for-comp90054-semester-1-2024)
+    - [Table of contents](#table-of-contents)
+  - [Introduction](#introduction)
+    - [Key files to read:](#key-files-to-read)
+    - [Other supporting files (do not modify):](#other-supporting-files-do-not-modify)
+  - [Rules of SPLENDOR:](#rules-of-splendor)
+    - [Layout:](#layout)
+    - [Scoring:](#scoring)
+    - [Changes](#changes)
+    - [Observations:](#observations)
+    - [Winning:](#winning)
+    - [Computation Time:](#computation-time)
+  - [Getting Started](#getting-started)
+    - [Options:](#options)
+    - [Restrictions:](#restrictions)
+    - [Warning:](#warning)
+    - [Ranking:](#ranking)
   
 ## Introduction
 
@@ -71,8 +75,8 @@ To be specific about this:
       * collect 1 gems.
    * If you have 10, your are allow to:
       * collect 3 gems and return 3 gems with different colour than those collected.
-      * collect 3 gems and return 2 gems with different colour than those collected.
-      * collect 3 gems and return 1 gems with different colour than those collected. 
+      * collect 2 gems and return 2 gems with different colour than those collected.
+      * collect 1 gems and return 1 gems with different colour than those collected. 
    * The returned gems:
       * must not contain any gem that has the same colour as those collected in the same action.
       * can contain same colour gems.
@@ -98,7 +102,7 @@ There will be an initial start-up allowance of 15 seconds. Your agent will need 
 
 ## Getting Started
 
-**Make sure the version of Python used is >= 3.8, and that you have installed func-timeout and gitpython (e.g. ```python -m pip install func-timeout``` and ```python -m pip install gitpython```)**
+**Make sure the version of Python used is >= 3.8, and that you have installed func-timeout (e.g. ```python -m pip install func-timeout```)**
 
 By default, you can run a game against two random agents with the following:
 
