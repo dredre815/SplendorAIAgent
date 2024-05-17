@@ -13,7 +13,7 @@ NUMBER_PLAYERS = 2
 EXPLORATION_PARAMETER = 0.6
 END_GAME_THRESHOLD = 15
 DISCOUNT_FACTOR = 0.9
-SIMULATION_DEPTH = 20
+SIMULATION_DEPTH = 40
 gem = {'red': 0, 'green': 0, 'blue': 0, 'black': 0, 'white': 0, 'yellow': 0}
 card = {'score': 0, 'red': 0, 'green': 0, 'blue': 0, 'black': 0, 'white': 0, 'yellow': 0}
 
@@ -320,7 +320,7 @@ class MCTS:
                     
             # Check if opponent has high probability to buy the card
             opponent_card_probability = self.CheckCardProbability(game_state, opponent_id, card, game_state.agents[opponent_id].gems.get('yellow', 0))
-            if opponent_card_probability > 0.5:
+            if opponent_card_probability > 0.75:
                 reward += 1.5
                 
             # Check if the card is useful for buying other useful cards
@@ -348,12 +348,14 @@ class MCTS:
                     
             # Check if the opponent has high probability to buy the reserved card
             opponent_card_probability = self.CheckCardProbability(game_state, opponent_id, card, game_state.agents[opponent_id].gems.get('yellow', 0))
-            if opponent_card_probability > 0.5:
-                reward += 1.5
+            if opponent_card_probability > 0.75:
+                reward += 1
+                if card.points >= 3:
+                    reward += 2
                 
             # Penalize if the player reserves a card with very low probability to buy
             card_probability = self.CheckCardProbability(game_state, agent_id, card, yellow_gems)
-            if card_probability < 0.3:
+            if card_probability < 0.25:
                 reward -= 3
                 
             # Penalize for returning gems
