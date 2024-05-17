@@ -307,23 +307,23 @@ class MCTS:
         start_time = time.time()
 
         while time.time() - start_time < TIME_LIMIT:
+            # Selection and Expansion
             selected_node = root.select()
-            
-            # Simulation phase
-            # print("simulate")
+            # Simulation
             reward = self.Simulate(selected_node)
-            
-            # Backpropagation phase
+            # Backpropagation
             selected_node.back_propagate(reward)
 
         best_node = root.choose_best_node(EXPLORATION_PARAMETER)
-
-        heuristic = Heuristic(self.agent_id, self.game_state, self.game_rule)
-        heuristic_action = heuristic.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
-        heuristic_reward = self.GetReward(heuristic_action, self.game_state, self.agent_id)
-
-        best_action = root.children.get(best_node) if best_node.reward >= heuristic_reward else heuristic_action
+        best_action = root.children.get(best_node)
         return best_action
+
+        # heuristic = Heuristic(self.agent_id, self.game_state, self.game_rule)
+        # heuristic_action = heuristic.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
+        # heuristic_reward = self.GetReward(heuristic_action, self.game_state, self.agent_id)
+
+        # best_action = root.children.get(best_node) if best_node.reward >= heuristic_reward else heuristic_action
+        # return best_action
     
     def Simulate(self, node):
         reward = 0
