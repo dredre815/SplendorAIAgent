@@ -11,7 +11,7 @@ import heapq
 TIME_LIMIT = 0.9
 NUMBER_PLAYERS = 2
 EXPLORATION_PARAMETER = 0.6
-END_GAME_THRESHOLD = 15
+END_GAME_SCORE = 15
 DISCOUNT_FACTOR = 0.9
 SIMULATION_DEPTH = 20
 gem = {'red': 0, 'green': 0, 'blue': 0, 'black': 0, 'white': 0, 'yellow': 0}
@@ -20,22 +20,85 @@ card = {'score': 0, 'red': 0, 'green': 0, 'blue': 0, 'black': 0, 'white': 0, 'ye
 # Initialize game rule
 game_rule = SplendorGameRule(NUMBER_PLAYERS)
 
-# Monte Carlo Tree Search node class
+"""Monte Carlo Tree Search node class"""
 class MCTSNode:
-    def __init__ (self, agent_id, game_state, parent, action):
-        self.agent_id = agent_id
+
+    def __init__(self, game_rule, agentID, game_state, parent):
+        self.game_rule = game_rule
+        self.agentID = agentID
         self.game_state = deepcopy(game_state)
         self.parent = parent
-        self.action = action
-        self.children = []
+        self.reward = 0
         self.visits = 0
-        self.value = 0
-        self.untried_actions = game_rule.getLegalActions(game_state, agent_id)
-        
-    def SelectChild(self):
-        # Use UCB1 formula to select the best child
-        return max(self.children, key = lambda c: c.value/c.visits + EXPLORATION_PARAMETER * sqrt(2*log(self.visits)/c.visits))
+        self.children = {}
+        self.selfEnd = (self.game_state.agents[agentID].score >= END_GAME_SCORE)
+        self.opponentEnd = (self.game_state.agents[1-agentID].score >= END_GAME_SCORE)
+
+
+    """Checks if a node is fully expanded"""
+    def is_fully_expanded(self):
+        valid_actions = self.game_rule.getLegalActions(self.game_state, self.agentID)
+        if len(valid_actions) == len(self.children):
+            return True
+        return False
     
+
+    """Select an action to expand on"""
+    def select(self):
+        node = self
+        while not node.selfEnd:
+            # print("Selecting")
+
+            if not node.is_fully_expanded():
+                # Expand an unused action
+                return node.expand()
+            else: 
+                # Choose the best action
+                node = node.choose_best_node(EXPLORATION_PARAMETER)
+
+        return node
+        
+
+    """Expand the node """
+    def expand(self):
+        # Choose unseen actions to expand
+        heuristic = Heuristic(self.agentID, self.game_state, self.game_rule)
+        actions = self.game_rule.getLegalActions(self.game_state, self.agentID)
+        for child in self.children:
+            actions.remove(self.children[child])
+        action = heuristic.HeuristicSelection(actions, self.game_state)
+        
+        # Append the successor as a children of the original node
+        next_state = self.game_rule.generateSuccessor(deepcopy(self.game_state), action, self.agentID)
+        next_node = MCTSNode(self.game_rule, self.agentID, next_state, self)
+        self.children[next_node] = action
+        
+        return next_node
+
+
+    """Backpropagate the reward up the tree"""
+    def back_propagate(self, reward):
+        node = self
+        while node != None:
+            node.visits += 1
+            node.reward += reward
+            node = node.parent
+
+
+    """Choose the node with highest reward"""
+    def choose_best_node(self, EXPLORATION_PARAMETER):
+        best_node = []
+        best_reward = float("-inf")
+
+        # UCB1
+        for child in self.children.keys():
+            node_reward = child.reward + (2*EXPLORATION_PARAMETER * sqrt(2*log(self.visits) / child.visits))
+            if node_reward >= best_reward:
+                best_reward = node_reward
+                best_node.append(child)
+        return random.choice(best_node)
+            
+
 class PriorityQueue:
     def __init__(self):
         self.queue_index = 0
@@ -51,12 +114,16 @@ class PriorityQueue:
     def pop(self):
         return heapq.heappop(self.priority_queue)[-1]
             
-# Monte Carlo Tree Search class
-class MCTS:
-    def __init__(self, agent_id, game_state):
+"""
+Each time an action needs to be selected, create a priority queue of actions using heuristics
+"""
+class Heuristic:
+
+    def __init__(self, agent_id, game_state, game_rule):
         self.agent_id = agent_id
         self.game_state = game_state
-    
+        self.game_rule = game_rule
+
     def HeuristicSelection(self, actions, state):
         priority_queue = PriorityQueue()
         board_state = self.check_board(state,self.agent_id)
@@ -210,75 +277,77 @@ class MCTS:
 
         return rewards
 
-    def Expand(self, node):
-        # If there are untried actions, create a new child node
-        if node.untried_actions:
-            # Use Heuristic Selection to prioritize actions
-            action = self.HeuristicSelection(node.untried_actions, node.game_state)
-            new_game_state = game_rule.generateSuccessor(deepcopy(node.game_state), action, node.agent_id)
-            new_node = MCTSNode(node.agent_id, new_game_state, node, action)
-            node.children.append(new_node)
-            node.untried_actions.remove(action)
-            return new_node
+"""
+Monte Carlo Tree Search class
+"""
+class MCTS:
+    def __init__(self, agent_id, game_state, game_rule):
+        self.agent_id = agent_id
+        self.game_state = game_state
+        self.game_rule = game_rule
+
+    # def Expand(self, node):
+    #     # If there are untried actions, create a new child node
+    #     if node.untried_actions:
+    #         # Use Heuristic Selection to prioritize actions
+    #         action = self.HeuristicSelection(node.untried_actions, node.game_state)
+    #         new_game_state = self.game_rule.generateSuccessor(deepcopy(node.game_state), action, node.agent_id)
+    #         new_node = MCTSNode(node.agent_id, new_game_state, node, action)
+    #         node.children.append(new_node)
+    #         node.untried_actions.remove(action)
+    #         return new_node
         
-        # The tree node is fully expanded
-        return None
+    #     # The tree node is fully expanded
+    #     return None
         
     def SelectAction(self):
-        root = MCTSNode(self.agent_id, self.game_state, None, None)
+        root = MCTSNode(self.game_rule, self.agent_id, self.game_state, None)
         
         # Run MCTS for a fixed amount of time to avoid timeout
         start_time = time.time()
+
         while time.time() - start_time < TIME_LIMIT:
-            node = root
-            game_state = deepcopy(self.game_state)
-            
-            # Selection and expansion phase
-            while not game_rule.gameEnds():
-                # If the node is fully expanded, use UCB1 to select the best child
-                if not node.untried_actions and node.children:
-                    node = node.SelectChild()
-                    game_state = game_rule.generateSuccessor(game_state, node.action, node.agent_id)
-                else:
-                    break
-            if node.untried_actions:
-                # Expand the node if it has untried actions
-                node = self.Expand(node)
-                game_state = game_rule.generateSuccessor(game_state, node.action, node.agent_id)
+            selected_node = root.select()
             
             # Simulation phase
-            reward = self.Simulate(game_state, start_time)
+            # print("simulate")
+            reward = self.Simulate(selected_node)
             
             # Backpropagation phase
-            self.Backpropagate(node, reward)
-        
-        MCTS_action = max(root.children, key = lambda c: c.visits).action
-        MCTS_reward = self.GetReward(MCTS_action, self.game_state, self.agent_id)
-        heuristic_action = self.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
+            selected_node.back_propagate(reward)
+
+        best_node = root.choose_best_node(EXPLORATION_PARAMETER)
+
+        heuristic = Heuristic(self.agent_id, self.game_state, self.game_rule)
+        heuristic_action = heuristic.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
         heuristic_reward = self.GetReward(heuristic_action, self.game_state, self.agent_id)
-        
-        best_action = MCTS_action if MCTS_reward >= heuristic_reward else heuristic_action
+
+        best_action = root.children.get(best_node) if best_node.reward >= heuristic_reward else heuristic_action
         return best_action
     
-    def Simulate(self, game_state, start_time):
+    def Simulate(self, node):
         reward = 0
-        game_state = deepcopy(game_state)
+        # game_state = deepcopy(self.game_state)
         simulation_depth = 1
         
-        while not game_rule.gameEnds() and simulation_depth < SIMULATION_DEPTH:
-            # Break if reaching the time limit
-            if time.time() - start_time > TIME_LIMIT:
-                break
-            
+        while not self.game_rule.gameEnds() and simulation_depth < SIMULATION_DEPTH:    
+
             # Select the action using Heuristic Selection
-            action = self.HeuristicSelection(game_rule.getLegalActions(game_state, self.agent_id), game_state)
-            
+            heuristic = Heuristic(node.agentID, node.game_state, node.game_rule)
+            action = heuristic.HeuristicSelection(self.game_rule.getLegalActions(node.game_state, node.agentID), node.game_state)
+
             # Accumulate the reward
-            reward += self.GetReward(action, game_state, self.agent_id) * (DISCOUNT_FACTOR ** simulation_depth)
-            game_state = game_rule.generateSuccessor(game_state, action, self.agent_id)
+            if node.agentID == self.agent_id:
+                reward += self.GetReward(action, node.game_state, node.agentID) * (DISCOUNT_FACTOR ** simulation_depth)
+            else:
+                reward -= self.GetReward(action, node.game_state, node.agentID) * (DISCOUNT_FACTOR ** simulation_depth)
+
+            next_agent_id = 1 - node.agentID
+            next_state = game_rule.generateSuccessor(deepcopy(node.game_state), action, node.agentID)
+            node = MCTSNode(self.game_rule, next_agent_id, next_state, node)
 
             simulation_depth += 1
-        
+            # print(reward)
         return reward
 
     def Backpropagate(self, node, value):
@@ -454,7 +523,7 @@ class myAgent(Agent):
         
     def SelectAction(self, actions, game_state):    
         # Initialize MCTS
-        mcts = MCTS(self.id, game_state)
+        mcts = MCTS(self.id, game_state, game_rule)
         
         # Select the best action using MCTS
         best_action = mcts.SelectAction()
