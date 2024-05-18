@@ -252,12 +252,13 @@ class MCTS:
             # Backpropagation phase
             self.Backpropagate(node, reward)
         
-        MCTS_action = max(root.children, key = lambda c: c.visits).action
-        MCTS_reward = self.GetReward(MCTS_action, self.game_state, self.agent_id)
-        heuristic_action = self.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
-        heuristic_reward = self.GetReward(heuristic_action, self.game_state, self.agent_id)
+        # MCTS_action = max(root.children, key = lambda c: c.visits).action
+        # MCTS_reward = self.GetReward(MCTS_action, self.game_state, self.agent_id)
+        # heuristic_action = self.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
+        # heuristic_reward = self.GetReward(heuristic_action, self.game_state, self.agent_id)
         
-        best_action = MCTS_action if MCTS_reward >= heuristic_reward else heuristic_action
+        # best_action = MCTS_action if MCTS_reward >= heuristic_reward else heuristic_action
+        best_action = max(root.children, key = lambda c: c.visits).action
         return best_action
     
     def Simulate(self, game_state, start_time):
@@ -364,15 +365,32 @@ class MCTS:
         elif action['type'] == 'collect_diff' or action['type'] == 'collect_same':
             # Check if the probability of buying useful cards increases after collecting gems
             yellow_gems = game_state.agents[agent_id].gems.get('yellow', 0)
+            game_state_after_collect = game_rule.generateSuccessor(game_state, action, agent_id)
+            
             cards_prob_before = []
             for useful_card in useful_cards:
                 card_probability = self.CheckCardProbability(game_state, agent_id, useful_card, yellow_gems)
                 cards_prob_before.append(card_probability)
                 
-            game_state_after_collect = game_rule.generateSuccessor(game_state, action, agent_id)
             cards_prob_after = []
             for useful_card in useful_cards:
                 card_probability = self.CheckCardProbability(game_state_after_collect, agent_id, useful_card, yellow_gems)
+                cards_prob_after.append(card_probability)
+                
+            for i in range(len(cards_prob_before)):
+                if cards_prob_after[i] > cards_prob_before[i]:
+                    reward += 3
+                    
+            # Check if the probability of buying reserved cards increases after collecting gems
+            reserved_cards = game_state.agents[agent_id].cards['yellow']
+            cards_prob_before = []
+            for reserved_card in reserved_cards:
+                card_probability = self.CheckCardProbability(game_state, agent_id, reserved_card, yellow_gems)
+                cards_prob_before.append(card_probability)
+                
+            cards_prob_after = []
+            for reserved_card in reserved_cards:
+                card_probability = self.CheckCardProbability(game_state_after_collect, agent_id, reserved_card, yellow_gems)
                 cards_prob_after.append(card_probability)
                 
             for i in range(len(cards_prob_before)):
