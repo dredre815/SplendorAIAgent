@@ -1,3 +1,4 @@
+import numpy as np
 from template import Agent
 from Splendor.splendor_model import SplendorGameRule
 from math import log, sqrt
@@ -36,19 +37,23 @@ class MCTSNode:
         # Use UCB1 formula to select the best child
         return max(self.children, key = lambda c: c.value/c.visits + EXPLORATION_PARAMETER * sqrt(2*log(self.visits)/c.visits))
     
+# Priority Queue class
 class PriorityQueue:
     def __init__(self):
         self.queue_index = 0
         self.priority_queue = []
 
     def push(self, item, priority):
+        # Push an item into the queue with a priority
         heapq.heappush(self.priority_queue,(priority, self.queue_index, item))
         self.queue_index += 1
 
     def empty(self):
+        # Check if the queue is empty
         return len(self.priority_queue) == 0
 
     def pop(self):
+        # Pop the item with the highest priority
         return heapq.heappop(self.priority_queue)[-1]
             
 # Monte Carlo Tree Search class
@@ -58,6 +63,7 @@ class MCTS:
         self.game_state = game_state
     
     def HeuristicSelection(self, actions, state):
+        # Use a heuristic function to prone the search space
         priority_queue = PriorityQueue()
         board_state = self.check_board(state,self.agent_id)
         start_time = time.time()
@@ -69,34 +75,47 @@ class MCTS:
             action_rewards = self.check_action(action)
             priority_queue.push(action, self.heuristic_func(board_state, action_rewards))
             
+        # Return the action with the highest priority
         return priority_queue.pop() if not priority_queue.empty() else random.choice(actions)
     
     def heuristic_func(self, on_board, action_rewards):
+        # Calculate the heuristic value of an action
         f1 = self.feature1(on_board, action_rewards)
         f2 = self.feature2(action_rewards)
-        f3 = self.feature3(on_board)
-        f4 = self.feature4(on_board)
+        f3 = 0
+        f4 = self.improved_feature4(on_board, action_rewards)
         f5 = self.feature5(on_board, action_rewards)
+        current_score = on_board["score"]
         
-        return self.phase_function(f1, f2, f3, f4, f5)
+        return self.phase_function(f1, f2, f3, f4, f5, current_score)
 
-    def phase_function(self, f1, f2, f3, f4, f5):
+    def phase_function(self, f1, f2, f3, f4, f5, current_score):
         final_distance = f1
-        gem_affect = f2
+        gem_ecoaffect = f2
         card_diversity = f3
         gem_diversity = f4
         nobel_distance = f5
         
-        return 20 * final_distance + 2 * gem_affect + 10 * card_diversity + 10 * gem_diversity + 25 * nobel_distance        
+        # Late phase
+        if current_score > 12:
+            return 30 * final_distance + 2 * gem_ecoaffect + 10 * card_diversity + 10 * gem_diversity +  35 * nobel_distance 
+        
+        # Mid phase
+        elif 6 < current_score <= 12:
+            return 20 * final_distance + 2 * gem_ecoaffect + 15 * card_diversity + 15 * gem_diversity + 25 * nobel_distance
+        
+        # Early phase
+        else:
+            return 20 * final_distance + 2 * gem_ecoaffect + 10 * card_diversity + 10 * gem_diversity + 30 * nobel_distance       
 
-    #这个特征衡量的是执行某个动作后，玩家与获胜分数之间的距离。
     def feature1(self, on_board, action_rewards):
+        # This feature measures the distance between the player and the winning score 
+        # after performing a certain action.
         current_score = on_board["score"] + action_rewards["score_reward"]
         max_score = 15
-        # 简化计算，只考虑当前分数与目标分数之间的比例
-        score_ratio = current_score / max_score
-        urgency = 1 - score_ratio  # 越接近获胜，紧迫性越低
-        # 将紧迫性直接作为得分调整系数
+        score_ratio = current_score / max_score # Simplify the calculation
+        urgency = 1 - score_ratio
+        
         return urgency
     
     def feature2(self, action_rewards):
@@ -106,11 +125,11 @@ class MCTS:
         cardnum = sum(list(action_rewards["gem_cards_rewards"].values())[1:])
         card_income = action_rewards["gem_cards_rewards"]["score"]
 
-        # 避免除零错误，且简化代码
+        # Avoid division by zero errors and simplify the code
         denominator_income = max(1, card_income + 1)
         denominator_cards = max(1, cardnum + 1)
 
-        # 使用一个常数来标准化得分
+        # Use a constant to standardize the scores
         normalization_constant = 20
         f2score = -((gem_change / denominator_income) + (gem_change / denominator_cards)) / normalization_constant
 
@@ -119,7 +138,7 @@ class MCTS:
     def feature3(self, on_board):
         gem_cards = on_board["my_gemcard"]
         diversity_score = 0
-        # 计算卡片的多样性分数，这里的处理与宝石相同
+        # Calculate the diversity score of the card, and the processing here is the same as that of gems
         for card in gem_cards:
             if gem_cards[card] > 2:
                 diversity_score -= (gem_cards[card] - 2) 
@@ -132,18 +151,27 @@ class MCTS:
         gem_values = on_board["my_gem"]
         diversity_score = 0
 
-        # 计算宝石的多样性分数
+        # Calculate the diversity score of gems
         for gem in gem_values:
             if gem_values[gem] > 4:
-                # 如果某种宝石超过4个，每多一个就减少一定分数
+                # If there are more than 4 gems, each additional one will reduce a certain score
                 diversity_score -= (gem_values[gem] - 4)
             else:
-                # 如果少于或等于4个，每有一个就增加一定分数
+                # If less than or equal to 4, each one will increase a certain score
                 diversity_score += 1
+                
+        return diversity_score
+    
+    def improved_feature4(self, on_board, action_rewards):
+        # Calculate the diversity score of gems
+        gem_values = list(on_board["my_gem"].values())[:-1]
+        gem_cards = np.array(list(on_board["my_gemcard"].values())) + np.array(list(action_rewards["gem_cards_rewards"].values())[1:])
+        diversity_score = sum([4 - i for i in gem_values ])/ (sum(gem_cards[:-1])+1)+gem_cards [-1]*2
+
         return diversity_score
 
-    #评估给定动作对于吸引贵族卡的贡献
     def feature5(self, on_board, action_rewards):
+        # Evaluate the contribution of a given action to attracting noble cards
         f4score = 0
         gem_cards = Counter(on_board["my_gemcard"])
         re = Counter({k: action_rewards['gem_cards_rewards'][k] for k in list(action_rewards['gem_cards_rewards'].keys())[1:]})
@@ -152,6 +180,7 @@ class MCTS:
         for noble in nobles:
             f4score += abs(sum(dict(Counter(noble) - Counter(this_gem_card)).values()))
         f4score = f4score / 9
+        
         return f4score
     
     def check_board(self, state, agent_id):
@@ -184,6 +213,7 @@ class MCTS:
         return board
     
     def check_action(self, action):
+        # Check the rewards of a given action
         rewards = {
             "score_reward": 0,
             "gem_rewards": deepcopy(gem),
@@ -192,19 +222,27 @@ class MCTS:
 
         action_type = action["type"]
         if action_type == "reserve":
+            # Reserve a card
             rewards["gem_rewards"]["yellow"] = 1
+            
         elif action_type in ['buy_available', 'buy_reserve']:
+            # Buy a card
             rewards["score_reward"] += action['card'].points
             rewards["gem_cards_rewards"]["score"] = action['card'].points
             rewards["gem_cards_rewards"][action['card'].colour] = 1
 
             for color in rewards["gem_rewards"]:
                 rewards["gem_rewards"][color] = -action['returned_gems'].get(color, 0)
+                
         elif action_type in ["collect_same", "collect_diff"]:
+            # Collect gems
             for color in rewards["gem_rewards"]:
+                # Calculate the gem rewards
                 collected = action['collected_gems'].get(color, 0)
                 returned = action['returned_gems'].get(color, 0)
                 rewards["gem_rewards"][color] = collected - returned
+        
+        # Check if the action leads to a noble card
         if action.get('noble'):
             rewards["score_reward"] += 3
 
@@ -218,6 +256,7 @@ class MCTS:
             new_game_state = game_rule.generateSuccessor(deepcopy(node.game_state), action, node.agent_id)
             new_node = MCTSNode(node.agent_id, new_game_state, node, action)
             node.children.append(new_node)
+            # Remove the selected action from the untried actions
             node.untried_actions.remove(action)
             return new_node
         
@@ -252,13 +291,9 @@ class MCTS:
             # Backpropagation phase
             self.Backpropagate(node, reward)
         
-        # MCTS_action = max(root.children, key = lambda c: c.visits).action
-        # MCTS_reward = self.GetReward(MCTS_action, self.game_state, self.agent_id)
-        # heuristic_action = self.HeuristicSelection(game_rule.getLegalActions(self.game_state, self.agent_id), self.game_state)
-        # heuristic_reward = self.GetReward(heuristic_action, self.game_state, self.agent_id)
-        
-        # best_action = MCTS_action if MCTS_reward >= heuristic_reward else heuristic_action
+        # Select the best action based on the number of visits
         best_action = max(root.children, key = lambda c: c.visits).action
+        
         return best_action
     
     def Simulate(self, game_state, start_time):
@@ -276,10 +311,11 @@ class MCTS:
             action = self.HeuristicSelection(game_rule.getLegalActions(game_state, self.agent_id), game_state)
             
             # Accumulate the reward
-            # reward += self.GetReward(action, game_state, self.agent_id) * (DISCOUNT_FACTOR ** simulation_depth)
             if agent_id == self.agent_id:
+                # Add the reward if it is the agent's turn
                 reward += self.GetReward(action, game_state, self.agent_id) * (DISCOUNT_FACTOR ** simulation_depth)
             else:
+                # Subtract the reward if it is the opponent's turn
                 reward -= self.GetReward(action, game_state, self.agent_id) * (DISCOUNT_FACTOR ** simulation_depth)
                 
             # Update the game state
@@ -303,6 +339,7 @@ class MCTS:
         opponent_id = 1 - agent_id
         game_state = deepcopy(game_state)
         useful_cards = self.CheckUsefulCard(game_state)
+        game_phase = self.GetGamePhase(game_state)
 
         if action['type'] == 'buy_available' or action['type'] == 'buy_reserve':
             card = action['card']
@@ -363,10 +400,10 @@ class MCTS:
             reward -= 1 * sum(action['returned_gems'].values())
                              
         elif action['type'] == 'collect_diff' or action['type'] == 'collect_same':
-            # Check if the probability of buying useful cards increases after collecting gems
             yellow_gems = game_state.agents[agent_id].gems.get('yellow', 0)
             game_state_after_collect = game_rule.generateSuccessor(game_state, action, agent_id)
             
+            # Check if the probability of buying useful cards increases after collecting gems
             cards_prob_before = []
             for useful_card in useful_cards:
                 card_probability = self.CheckCardProbability(game_state, agent_id, useful_card, yellow_gems)
@@ -408,6 +445,19 @@ class MCTS:
             reward += 5
         
         return reward
+    
+    def GetGamePhase(self, game_state):
+        # Check the game phase
+        score = game_state.agents[self.agent_id].score
+        
+        if 13 <= score <= END_GAME_THRESHOLD:
+            return 'late'
+        
+        elif 7 <= score <= 12:
+            return 'mid'
+        
+        else:
+            return 'early'
     
     def CheckNobleProbability(self, game_state, agent_id):
         # Check the probability of achieving each noble
