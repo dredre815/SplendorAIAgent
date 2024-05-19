@@ -491,6 +491,7 @@ class MCTS:
                 card_probabilities.append((gem_on_card + gem + yellow_gems) / count)
                 yellow_gems = 0
                
+        # Return the minimum probability
         return min(card_probabilities)
     
     def CheckUsefulCard(self, game_state):
