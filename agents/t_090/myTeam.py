@@ -339,7 +339,6 @@ class MCTS:
         opponent_id = 1 - agent_id
         game_state = deepcopy(game_state)
         useful_cards = self.CheckUsefulCard(game_state)
-        game_phase = self.GetGamePhase(game_state)
 
         if action['type'] == 'buy_available' or action['type'] == 'buy_reserve':
             card = action['card']
@@ -445,19 +444,6 @@ class MCTS:
             reward += 5
         
         return reward
-    
-    def GetGamePhase(self, game_state):
-        # Check the game phase
-        score = game_state.agents[self.agent_id].score
-        
-        if 13 <= score <= END_GAME_THRESHOLD:
-            return 'late'
-        
-        elif 7 <= score <= 12:
-            return 'mid'
-        
-        else:
-            return 'early'
     
     def CheckNobleProbability(self, game_state, agent_id):
         # Check the probability of achieving each noble
