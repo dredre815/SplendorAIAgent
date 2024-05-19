@@ -232,6 +232,7 @@ class MCTS:
             rewards["gem_cards_rewards"][action['card'].colour] = 1
 
             for color in rewards["gem_rewards"]:
+                # Calculate the gem rewards
                 rewards["gem_rewards"][color] = -action['returned_gems'].get(color, 0)
                 
         elif action_type in ["collect_same", "collect_diff"]:
