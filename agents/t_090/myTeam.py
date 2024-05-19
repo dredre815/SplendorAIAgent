@@ -172,7 +172,6 @@ class MCTS:
         # Calculate scores for each gem type when less than 4 gems are present
         scores = [4 - gem for gem in gem_values]
         total_score = sum(scores)  # Calculate total score
-        # Normalize the score by dividing by the total number of gem cards plus one
         normalized_score = total_score / (sum(future_cardgems[:-1]) + 1)
         last_gem_card_bonus = future_cardgems[-1] * 2
         # Final diversity score
