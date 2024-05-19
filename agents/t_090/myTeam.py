@@ -174,6 +174,7 @@ class MCTS:
         total_score = sum(scores)
         normalized_score = total_score / (sum(future_cardgems[:-1]) + 1)
         last_gem_card_bonus = future_cardgems[-1] * 2
+        
         # Final diversity score
         diversity_score = normalized_score + last_gem_card_bonus
         return diversity_score
