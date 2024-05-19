@@ -331,7 +331,6 @@ class MCTS:
             game_state = game_rule.generateSuccessor(game_state, action, next_agent_id)
 
             simulation_depth += 1
-        
         return reward
 
     def Backpropagate(self, node, value):
