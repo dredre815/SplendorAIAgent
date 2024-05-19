@@ -162,12 +162,21 @@ class MCTS:
                 
         return diversity_score
     
-    def improved_feature4(self, on_board, action_rewards):
-        # Calculate the diversity score of gems
+    def improved_feature4(on_board, action_rewards):
+        # Get current gem counts, excluding the last type of gem
         gem_values = list(on_board["my_gem"].values())[:-1]
-        gem_cards = np.array(list(on_board["my_gemcard"].values())) + np.array(list(action_rewards["gem_cards_rewards"].values())[1:])
-        diversity_score = sum([4 - i for i in gem_values ])/ (sum(gem_cards[:-1])+1)+gem_cards [-1]*2
-
+        # Predict future gem card counts, excluding the last type of card reward
+        gem_card_value = np.array(list(on_board["my_gemcard"].values()))
+        card_re = np.array(list(action_rewards["gem_cards_rewards"].values())[1:])
+        future_cardgems = gem_card_value + card_re
+        
+        # Calculate scores for each gem type when less than 4 gems are present
+        scores = [4 - gem for gem in gem_values]
+        total_score = sum(scores)  # Calculate total score
+        normalized_score = total_score / (sum(future_cardgems[:-1]) + 1)
+        # Special treatment for the count of the last type of gem card, doubling its value and adding to the total score
+        last_gem_card_bonus = future_cardgems[-1] * 2
+        diversity_score = normalized_score + last_gem_card_bonus
         return diversity_score
 
     def feature5(self, on_board, action_rewards):
