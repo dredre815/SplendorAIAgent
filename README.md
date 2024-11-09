@@ -104,8 +104,8 @@ This project is part of COMP90054 at the University of Melbourne. All rights res
 ## Development Team
 ```
 | Student ID | Name         | Email                              | GitHub      |
-|------------|--------------|-----------------------------------|-------------|
-| 1160040    | Zijun Zhang | zijuzhang1@student.unimelb.edu.au | dredre815   |
-| 1208784    | Di Wu       | dww3@student.unimelb.edu.au       | WD1120      |
-| 1224627    | Xiaoyu Pang | xiapang@student.unimelb.edu.au    | Pang1229    |
+|------------|--------------|----------------------------------- |-------------|
+| 1160040    | Zijun Zhang  | zijuzhang1@student.unimelb.edu.au  | dredre815   |
+| 1208784    | Di Wu        | dww3@student.unimelb.edu.au        | WD1120      |
+| 1224627    | Xiaoyu Pang  | xiapang@student.unimelb.edu.au     | Pang1229    |
 ```
